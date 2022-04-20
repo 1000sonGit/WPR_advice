@@ -1,0 +1,9 @@
+yfinance
+csv
+threading
+os.path
+time
+MetaTrader5
+talib
+pulp
+PyQt5.QtCore
