@@ -19,7 +19,7 @@ pip install WPR_advice
 
 ```python
 from WPR_advice import Download_data
-Download_data.my_function()
+Download_data.Coleta()
 ```
 
 ## Author
