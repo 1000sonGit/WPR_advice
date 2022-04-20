@@ -57,13 +57,10 @@ if __name__ == '__main__':
     descartados = ''
     threads = []
     obj = Coleta(stdoutmutex, descartados)
-    #obj.listaFundos()
-    #obj.getting()
     threadGET = threading.Thread(target=obj.getting())
     threadGET.daemon = True
     threadGET.start()
     threads.append(threadGET)
-    # obj.comparar_dados()
     for thread in threads:
         thread.join()
     duracao = round((perf_counter()), 0)

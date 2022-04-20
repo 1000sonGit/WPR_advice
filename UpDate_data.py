@@ -12,9 +12,8 @@ import MetaTrader5 as mt5
 
 class Atualizar(threading.Thread):
 
-    def __init__(self, tipo, path, descartados, mutex):
+    def __init__(self, tipo, descartados, mutex):
         self.tipo = tipo
-        self.path_now = path
         self.descartados = descartados
         self.mutex = mutex
         threading.Thread.__init__(self)
@@ -188,18 +187,15 @@ class Atualizar(threading.Thread):
 
 
 if __name__ == '__main__':
-    path = 'E:/OneDrive/Investimento/COTAHIST/COTAHIST_A2020.TXT'
     descartados = ''
     stdoutmutex = threading.Lock()
     threads = []
     tipo = "MT5"
-    obj = Atualizar(tipo, path, descartados, stdoutmutex)
-    #obj.listaAcoes()
+    obj = Atualizar(tipo, descartados, stdoutmutex)
     threadCOMP = threading.Thread(target=obj.comparar_dados())
     threadCOMP.daemon = True
     threadCOMP.start()
     threads.append(threadCOMP)
-    #obj.comparar_dados()
     for thread in threads:
         thread.join()
     duracao = round((perf_counter()), 0)

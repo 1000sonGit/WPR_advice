@@ -112,9 +112,11 @@ class StormStrategy(threading.Thread):#threading.Thread, QThread):
 
 
 if __name__ == '__main__':
-
+    # Média do volume
     mm_vol = 21
+    # Período do indicador
     will_int = 14
+    # Média do indicador
     mm_will = 14
     stdoutmutex = threading.Lock()
     threads = []
