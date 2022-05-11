@@ -20,12 +20,12 @@ class Coleta(threading.Thread):
         #Utilizando os nomes dos arquivos já baixados
         #lista = os.listdir(f'F:/OneDrive/Cursos Python/Gritos do Mercado/Dados_yahoo_CSV')
         #self.listaAcao = [x.replace('.csv', '') for x in lista]
-        #self.listaAcao = ['SBSP3.SA']
-        self.listaAcao = ['BOVA11.SA', 'ABEV3.SA', 'BBDC4.SA', 'CIEL3.SA', 'CSNA3.SA', 'GGBR4.SA',
+        self.listaAcao = ['BBAS3.SA']
+        '''self.listaAcao = ['BOVA11.SA', 'ABEV3.SA', 'BBDC4.SA', 'CIEL3.SA', 'CSNA3.SA', 'GGBR4.SA',
                           'ITUB4.SA', 'ITSA4.SA', 'PETR4.SA', 'USIM5.SA', 'VALE3.SA',
                           'BRFS3.SA', 'SBSP3.SA', 'EMBR3.SA', 'SUZB3.SA', 'MRFG3.SA', 'JBSS3.SA', 'WEGE3.SA',
-                          'MGLU3.SA', 'VIIA3.SA',
-                          'B3SA3.SA', 'BPAC11.SA', 'BBSE3.SA', 'CMIG4.SA']
+                          'MGLU3.SA', 'VIIA3.SA', 'COGN3.SA', 'BBAS3.SA',
+                          'B3SA3.SA', 'BPAC11.SA', 'BBSE3.SA', 'CMIG4.SA']'''
 
         print(self.listaAcao)
         with self.mutex:

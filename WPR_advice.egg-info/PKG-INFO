@@ -1,0 +1,40 @@
+Metadata-Version: 2.1
+Name: WPR-advice
+Version: 0.0.1
+Summary: Analysis with William's Percent Range
+Home-page: my_github_repository_project_link
+Author: Milson Fortunato Neto
+Author-email: milsonfn@yahoo.com
+License: UNKNOWN
+Description: # Analysis with William's Percent Range (WPR)
+        
+        Description. 
+        The package William's Percent Range is used to:
+        - Processing:
+            - Download data
+            - Updata data
+            - Processing Model
+        
+        ## Installation
+        
+        Use the package manager [pip](https://pip.pypa.io/en/stable/) to install WPR_advice
+        
+        ```bash
+        pip install WPR_advice
+        ```
+        
+        ## Usage
+        
+        ```python
+        from WPR_advice import Download_data
+        Download_data.Coleta()
+        ```
+        
+        ## Author
+        Milson Fortunato Neto
+        
+        ## License
+        [MIT](https://choosealicense.com/licenses/mit/)
+Platform: UNKNOWN
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown

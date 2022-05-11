@@ -17,10 +17,10 @@ pip install WPR_advice
 
 ## Usage
 
-```python
-from WPR_advice import Download_data
-Download_data.Coleta()
-```
+
+ - from WPR_advice import Download_data
+ - Download_data.Coleta()
+
 
 ## Author
 Milson Fortunato Neto

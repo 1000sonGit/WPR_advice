@@ -28,10 +28,11 @@ class Atualizar(threading.Thread):
         ##lista = os.listdir(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV')
         ##self.listaAcao = [x.replace('.csv', '') for x in lista]
         # Utilizando somente a lista das opções com liquidez
+        #self.listaAcao = ['CMIG4.SA']
         self.listaAcao = ['BOVA11.SA', 'ABEV3.SA', 'BBDC4.SA', 'CIEL3.SA', 'CSNA3.SA', 'GGBR4.SA',
                           'ITUB4.SA', 'ITSA4.SA', 'PETR4.SA', 'USIM5.SA', 'VALE3.SA',
                           'BRFS3.SA', 'SBSP3.SA', 'EMBR3.SA', 'SUZB3.SA', 'MRFG3.SA', 'JBSS3.SA', 'WEGE3.SA',
-                          'MGLU3.SA', 'VIIA3.SA', 'COGN3.SA',
+                          'MGLU3.SA', 'VIIA3.SA', 'COGN3.SA', 'BBAS3.SA',
                           'B3SA3.SA', 'BPAC11.SA', 'BBSE3.SA', 'CMIG4.SA']
         with self.mutex:
 
@@ -190,7 +191,7 @@ if __name__ == '__main__':
     descartados = ''
     stdoutmutex = threading.Lock()
     threads = []
-    tipo = "MT5"
+    tipo = "yahoo"#"MT5"
     obj = Atualizar(tipo, descartados, stdoutmutex)
     threadCOMP = threading.Thread(target=obj.comparar_dados())
     threadCOMP.daemon = True

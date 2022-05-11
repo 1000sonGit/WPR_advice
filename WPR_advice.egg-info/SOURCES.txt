@@ -1,0 +1,7 @@
+README.md
+setup.py
+WPR_advice.egg-info/PKG-INFO
+WPR_advice.egg-info/SOURCES.txt
+WPR_advice.egg-info/dependency_links.txt
+WPR_advice.egg-info/requires.txt
+WPR_advice.egg-info/top_level.txt

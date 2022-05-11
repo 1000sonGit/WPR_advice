@@ -37,8 +37,9 @@ import talib as ta
 class StormStrategy(threading.Thread):#threading.Thread, QThread):
     valueChanged = pyqtSignal(int)
 
-    def __init__(self, mm_vol, will_int, mm_will, mutex):
-
+    def __init__(self, mm_9, mm_21, mm_vol, will_int, mm_will, mutex):
+        self.mm_9 = mm_9
+        self.mm_21 = mm_21
         self.mm_vol = mm_vol
         self.will_int = will_int
         self.mm_will = mm_will
@@ -64,7 +65,7 @@ class StormStrategy(threading.Thread):#threading.Thread, QThread):
         self.listaAcao = ['BOVA11.SA', 'ABEV3.SA', 'BBDC4.SA', 'CIEL3.SA', 'CSNA3.SA', 'GGBR4.SA',
                           'ITUB4.SA', 'ITSA4.SA', 'PETR4.SA', 'USIM5.SA', 'VALE3.SA',
                           'BRFS3.SA', 'SBPS3.SA', 'EMBR3.SA', 'SUZB3.SA', 'MRFG3.SA', 'JBSS3.SA', 'WEGE3.SA',
-                          'MGLU3.SA', 'VIIA3.SA', 'COGN3.SA',
+                          'MGLU3.SA', 'VIIA3.SA', 'COGN3.SA', 'BBAS3.SA',
                           'B3SA3.SA', 'BPAC11.SA', 'BBSE3.SA', 'CMIG4.SA']
         #print(self.listaAcao)
         self.comprar = []
@@ -81,6 +82,23 @@ class StormStrategy(threading.Thread):#threading.Thread, QThread):
                                            engine='python')
                         # Removendo os dados nulos
                         Acao.dropna(inplace=True)
+                        # Cálculo das médias móveis do preço de fechamento correspondentes ao gráfico semanal
+                        '''
+                        Estratégia: Se as médias estiverem apontadas para cima e a mm_9 acima da mm_21 (semanal), sinal de compra.
+                        Se as médias estiverem apontadas para baixo e a mm_9 abaixo da mm_21 (semanal), sinal de venda.
+                        '''
+                        mm_9_sem = np.array(ta.EMA(Acao.iloc[0:, 4], timeperiod=self.mm_9))
+                        mm_21_sem = np.array(ta.EMA(Acao.iloc[0:, 4], timeperiod=self.mm_21))
+                        # Condição para identificar a inclinação das médias
+                        if(mm_9_sem[::-1][0] > mm_9_sem[::-1][1]):
+                            mm_9_s = 1
+                        else:
+                            mm_9_s = -1
+
+                        if (mm_21_sem[::-1][0] > mm_21_sem[::-1][1]):
+                            mm_21_s = 1
+                        else:
+                            mm_21_s = -1
                         # Obtendo os dados do volume
                         volume = np.array(Acao.iloc[0:, 6])
                         # Calculando a média do volume
@@ -94,11 +112,11 @@ class StormStrategy(threading.Thread):#threading.Thread, QThread):
 
                         # Condição para compra
                         if(will_perc[-3] < media_will[-3] and will_perc[-1] > media_will[-1] and volume[-1] > 1.05*media_vol[-1] and
-                           media_will[-1] < -40):
+                           media_will[-1] < -40 and will_perc[-1] < -20) and mm_9_s == 1 and mm_21_s == 1 and mm_9_sem[-1] > mm_21_sem[-1]:
                             self.comprar.append(acao)
-
+                        # Condição de venda
                         elif(will_perc[-3] > media_will[-3] and will_perc[-1] < media_will[-1] and volume[-1] > 1.05*media_vol[-1] and
-                           media_will[-1] > -60):
+                           media_will[-1] > -60 and will_perc[-1] > -80) and mm_9_s == -1 and mm_21_s == -1 and mm_9_sem[-1] < mm_21_sem[-1]:
                             self.vender.append(acao)
 
                     self.pbar.update(1)
@@ -112,15 +130,18 @@ class StormStrategy(threading.Thread):#threading.Thread, QThread):
 
 
 if __name__ == '__main__':
+    # Média Móvel do preço no semanal
+    mm_9 = 45 #45 representa a mm 9 no diário
+    mm_21 = 105 #105 representa a mm 21 no diário
     # Média do volume
-    mm_vol = 21
+    mm_vol = 14
     # Período do indicador
     will_int = 14
     # Média do indicador
     mm_will = 14
     stdoutmutex = threading.Lock()
     threads = []
-    obj = StormStrategy(mm_vol, will_int, mm_will, stdoutmutex)
+    obj = StormStrategy(mm_9, mm_21, mm_vol, will_int, mm_will, stdoutmutex)
     obj.start()
     threads.append(obj)
     for thread in threads:
