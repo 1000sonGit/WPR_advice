@@ -27,17 +27,14 @@ import talib as ta
 class WebScraping(threading.Thread):#threading.Thread, QThread):
     valueChanged = pyqtSignal(int)
 
-    def __init__(self, vol_acao, vol_fii, cap_op, perda, minus, short, long, descartados, path_now, mutex):
+    def __init__(self, vol_acao, vol_fii, cap_op, perda, short, long, mutex):
 
         self.vol_acao = vol_acao
         self.vol_fii = vol_fii
         self.cap_op = cap_op
         self.perda = perda
-        self.minus = minus
         self.short = short
         self.long = long
-        self.descartados = descartados
-        self.path_now = path_now
         self.mutex = mutex
         threading.Thread.__init__(self)
         #QThread.__init__(self)
@@ -57,13 +54,13 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
         #db['papeis'] = self.listaAcao
         ##self.listaAcao = db['papeis']
         ##db.close()
-        #self.listaAcao = ['KNCR11.SA']
+        self.listaAcao = ['USIM5.SA']
         # Utilizando somente a lista das opções com liquidez
-        self.listaAcao = ['BOVA11.SA', 'ABEV3.SA', 'BBDC4.SA', 'CIEL3.SA', 'CSNA3.SA', 'GGBR4.SA',
-                          'ITUB4.SA', 'ITSA4.SA', 'PETR4.SA', 'USIM5.SA', 'VALE3.SA',
-                          'BRFS3.SA', 'SBPS3.SA', 'EMBR3.SA', 'SUZB3.SA', 'MRFG3.SA', 'JBSS3.SA', 'WEGE3.SA',
-                          'MGLU3.SA', 'VIIA3.SA', 'COGN3.SA', 'BBAS3.SA',
-                          'B3SA3.SA', 'BPAC11.SA', 'BBSE3.SA', 'CMIG4.SA']
+        # self.listaAcao = ['BOVA11.SA', 'ABEV3.SA', 'BBDC4.SA', 'CIEL3.SA', 'CSNA3.SA', 'GGBR4.SA',
+        #                   'ITUB4.SA', 'ITSA4.SA', 'PETR4.SA', 'USIM5.SA', 'VALE3.SA',
+        #                   'BRFS3.SA', 'SBPS3.SA', 'EMBR3.SA', 'SUZB3.SA', 'MRFG3.SA', 'JBSS3.SA', 'WEGE3.SA',
+        #                   'MGLU3.SA', 'VIIA3.SA', 'COGN3.SA', 'BBAS3.SA',
+        #                   'B3SA3.SA', 'BPAC11.SA', 'BBSE3.SA', 'CMIG4.SA']
         print(self.listaAcao)
         self.preco = []
         compra = []
@@ -81,6 +78,9 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
         stop_c = []
         stop_v = []
         names = []
+        #Listas para guardar o tipo de Setup utilizado
+        candle_f_c = []
+        candle_f_v = []
 
         with tqdm(total=len(self.listaAcao)) as self.pbar:
             with self.mutex:
@@ -97,8 +97,12 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                         volume_21 = volume[-21:].mean()
                         vol_med = np.nanmean(volume)
 
-                        # Obtendo o valor das Médias Móveis (obs: pegando o preço do final para o começo)
+                        #Obtendo o preço e ordenando do final para o começo
                         preco = np.array(Acao.iloc[::-1, 4])
+                        #Obtendo a máxima e a mínima e ordenando do final para o começo
+                        phigh = np.array(Acao.iloc[::-1, 2])
+                        plow = np.array(Acao.iloc[::-1, 3])
+                        # Obtendo o valor das Médias Móveis (obs: pegando o preço do final para o começo)
                         # FAZENDO AS MÉDIAS MÓVEIS
                         # ARMAZENANDO AS MÉDIAS COM INDICAÇÃO DE ALTA(+) OU BAIXA(-)
                         # Utilizando biblioteca TALIB para calcular a média exponencial (existe um desvio nos valores quando comparados aos do MTQL5)
@@ -120,32 +124,62 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                             med_21 = m21[0]
 
                         # Loop para certificar tendência de alta ou baixa da "MÉDIA" (Utilizado no Setup 9.1)
+                        # OBS: Lembrar que a m9 está do fim para o começo!
+                        # Indica média decrescente
                         botton = False
+                        # Indica média crescente
                         top = False
-                        for i in range(0, 5):
+                        # Parte da posição 1 para não pegar a última média
+                        # for i in range(1, 5):
+                        #
+                        #     if (m9[1+i]) <= (m9[i]):
+                        #         top = True
+                        #     else:
+                        #         # Basta um falso para invalidar
+                        #         top = False
+                        #         break
+                        # if ((med_9 < 0) and (top == True)):
+                        #     top = True
+                        # else:
+                        #     top = False
+                        # for i in range(1, 5):
+                        #
+                        #     if (m9[1+i]) >= (m9[i]):
+                        #         botton = True
+                        #     else:
+                        #         botton = False
+                        #         break
+                        # if ((med_9 > 0) and (botton == True)):
+                        #     botton = True
+                        # else:
+                        #     botton = False
+                        # Loop para identificar correção dos preços SETUP PC (Média lenta)
+                        # Para correção de alta
+                        co_botton = False
+                        #Para correção de baixa
+                        co_top = False
+                        for i in range(0, 2):
 
-                            if (m9[1+i]) >= (m9[i]):
-                                top = True
+                            if (preco[1 + i]) <= (preco[i]):
+                                co_top = True
                             else:
-                                top = False
-                        if ((med_9 < 0) and (top == True)):
-                            top = True
+                                co_top = False
+                                break
+                        if ((med_21 < 0) and (co_top == True)):
+                            co_top = True
                         else:
-                            top = False
-                        for i in range(0, 5):
-                            '''
-                            media = np.array([float(y) for y in preco[0:self.short + i]])
-                            media_desloc = np.array([float(y) for y in preco[1:self.short + (i + 1)]])
-                            if media.mean() <= media_desloc.mean():
-                            '''
-                            if (m9[1+i]) <= (m9[i]):
-                                botton = True
+                            co_top = False
+                        for i in range(0, 2):
+
+                            if (preco[1 + i]) >= (preco[i]):
+                                co_botton = True
                             else:
-                                botton = False
-                        if ((med_9 > 0) and (botton == True)):
-                            botton = True
+                                co_botton = False
+                                break
+                        if ((med_21 > 0) and (co_botton == True)):
+                            co_botton = True
                         else:
-                            botton = False
+                            co_botton = False
                         # OBTENDO OS DADOS DOS CANDLES COM USO DOS DADOS DAS MÉDIAS
                         # Laço para obter o tamanho dos candles (Fazendo o módulo do tamanho do candle)
                         tam = [(((Acao.iloc[u, 4] - Acao.iloc[u, 1]) ** 2) ** 0.5) for u in range(0, len(volume))]
@@ -206,35 +240,52 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                         # Condições para verificar os Setup's 9.1, 9.2 e 9.3
                             # Setup 9.1 compra: Inversão da média para cima: candle_force = 11
                             # Setup 9.1 venda: Inversão da média para baixo: candle_force = 12
-                            # Setup 9.2 compra: Correção da tendência de alta: candle_force = 13
-                            # Setup 9.2 venda: Correção da tendência de baixa: candle_force = 14
-                            # Setup 9.3 compra: Correção da tendência de alta: candle_force = 15
-                            # Setup 9.3 venda: Correção da tendência de baixa: candle_force = 16
+
+                            # Setup 9.2 compra: Correção da tendência de alta: candle_force = 11
+                            # Setup 9.2 venda: Correção da tendência de baixa: candle_force = 12
+                            # Setup 9.3 compra: Correção da tendência de alta: candle_force = 13
+                            # Setup 9.3 venda: Correção da tendência de baixa: candle_force = 14
+                            # Cruzamento da média longa compra: candle_force = 15
+                            # Cruzamento da média curta venda: candle_force = 16
+                            # Setup PC compra: Correção da tendência de alta pela média longa: candle_force = 17
+                            # Setup PC venda: Correção da tendência de baixa pela média longa: candle_force = 18
                         #0'Date', 1'Open', 2'High', 3'Low', 4'Close', 5'Variation', 6'Volume'
-                        # Condição para Setup 9.1 Compra
-                        elif ((med_9 > 0) and (botton == True)):
-                            candle_force = 11
-                        # Condição para Setup 9.1 Venda
-                        elif ((med_9 < 0) and (top == True)):
-                            candle_force = 12
+                        # # Condição para Setup 9.1 Compra
+                        # elif ((med_9 > 0) and (botton == True)):
+                        #     candle_force = 11
+                        # # Condição para Setup 9.1 Venda
+                        # elif ((med_9 < 0) and (top == True)):
+                        #     candle_force = 12
                         # Condição para Setup 9.2 Compra
                         elif ((med_9 > 0) and (Acao.iloc[-2, 3] > Acao.iloc[-1, 4]) and
                                 (Acao.iloc[-2, 4] > Acao.iloc[-3, 4])):
-                            candle_force = 13
+                            candle_force = 11
                         # Condição para Setup 9.2 Venda
                         elif ((med_9 < 0) and (Acao.iloc[-2, 2] < Acao.iloc[-1, 4]) and
                                 (Acao.iloc[-2, 4] < Acao.iloc[-3, 4])):
-                            candle_force = 14
+                            candle_force = 12
                         # Condição para Setup 9.3 Compra
                         elif ((med_9 > 0) and (Acao.iloc[-3, 4] > Acao.iloc[-1, 4]) and
                                 (Acao.iloc[-3, 4] > Acao.iloc[-2, 4]) and
                                 (Acao.iloc[-3, 3] < Acao.iloc[-2, 4]) and (Acao.iloc[-3, 4] > Acao.iloc[-4, 4])):
-                            candle_force = 15
+                            candle_force = 13
                         # Condição para Setup 9.3 Venda
                         elif ((med_9 < 0) and (Acao.iloc[-3, 4] < Acao.iloc[-1, 4]) and
                               (Acao.iloc[-3, 4] < Acao.iloc[-2, 4]) and (Acao.iloc[-3, 2] > Acao.iloc[-2, 4]) and
                               (Acao.iloc[-3, 4] < Acao.iloc[-4, 4])):
+                            candle_force = 14
+                        # Condição para cruzamento das médias longas Compra
+                        elif (m21[0] > m21_deslocada[0] and m21[2] < m21_deslocada[2] and med_9 > 0):
+                            candle_force = 15
+                        # Condição para cruzamento das médias longas Venda
+                        elif (m21[0] < m21_deslocada[0] and m21[2] > m21_deslocada[2] and med_9 < 0):
                             candle_force = 16
+                        # Condição para Setup PC Compra
+                        elif ((med_21 > 0) and (co_botton == True)):
+                            candle_force = 17
+                        # Condição para Setup PC Venda
+                        elif ((med_21 < 0) and (co_top == True)):
+                            candle_force = 18
                         else:
                             pass
                         ###Portanto candle_force(ímpar)=VERDE e candle_force(par)=VERMELHO###
@@ -296,6 +347,7 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                                                 perda_c.append(round((1-self.porcentagem)*100, 2))
                                                 preco_c.append(preco[0])
                                                 stop_c.append(med_21)
+                                                candle_f_c.append(candle_force)
                                                 self.pbar.update(1)
                                                 break
                                             # Se o primeiro topo superior encontrado não satisfazer a relação Risco x Retorno, sai do laço com break
@@ -322,6 +374,7 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                                     perda_c.append(round((1 - self.porcentagem) * 100, 2))
                                     preco_c.append(preco[0])
                                     stop_c.append(preco[1])
+                                    candle_f_c.append(candle_force)
                                     self.pbar.update(1)
                                 # Condição para preço de fechamento igual (Calculando o risco pela diferença entre preço e o low anterior)
                                 elif (((med_9 * -1) - preco[0]) >= 1 * ((((Acao.iloc[len(tam) - 2, 3]) - preco[1]) ** 2) ** 0.5)) and (preco[0] >= (Acao.iloc[len(tam) - 2, 3])) and\
@@ -334,6 +387,7 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                                     perda_c.append(round((1 - self.porcentagem) * 100, 2))
                                     preco_c.append(preco[0])
                                     stop_c.append((Acao.iloc[len(tam) - 2, 3]))
+                                    candle_f_c.append(candle_force)
                                     self.pbar.update(1)
                                 # Se não satisfazer a relação Risco x Retorno, passa
                                 else:
@@ -391,6 +445,7 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                                                 perda_v.append(round((1-self.porcentagem)*100, 2))
                                                 preco_v.append(preco[0])
                                                 stop_v.append((med_21*-1))
+                                                candle_f_v.append(candle_force)
                                                 self.pbar.update(1)
                                                 break
                                             # Se o primeiro topo superior encontrado não satisfazer a relação Risco x Retorno, sai do laço com break
@@ -415,6 +470,7 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                                     perda_v.append(round((self.porcentagem) * 100, 2))
                                     preco_v.append(preco[0])
                                     stop_v.append(preco[1])
+                                    candle_f_v.append(candle_force)
                                     self.pbar.update(1)
                                 # Condição para preço de fechamento igual (Calculando o risco pela diferença entre preço e o high anterior)
                                 elif ((preco[0] - med_9) >= 1 * (Acao.iloc[len(tam)-2, 2] - preco[0])) and (preco[0] <= Acao.iloc[len(tam)-2, 2]) and\
@@ -427,6 +483,7 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                                     perda_v.append(round((self.porcentagem) * 100, 2))
                                     preco_v.append(preco[0])
                                     stop_v.append(Acao.iloc[len(tam)-2, 2]) #preco[1]
+                                    candle_f_v.append(candle_force)
                                     self.pbar.update(1)
 
                                 # Se não satisfazer a relação Risco x Retorno, passa
@@ -458,15 +515,15 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                             alto = []
                             baixo = []
 
-                            # Condição para Setup 9.1, 9.2, 9.3 Compra
+                            # Condição para Setup 9.2, 9.3, Cruzamento Compra, PC
 
-                            if ((candle_force == 11) or (candle_force == 13) or (candle_force == 15)):
+                            if ((candle_force == 11) or (candle_force == 13) or (candle_force == 15) or (candle_force == 17)):
                                 # Loop para coletar os topos e fundos
                                 for i in range(0, len(volume)-2):
-                                    if (preco[i + 1] > preco[i]) and (preco[i + 1] > preco[i + 2]):
-                                        alto.append(round(preco[i + 1], 2))
-                                    elif (preco[i + 1] < preco[i]) and (preco[i + 1] < preco[i + 2]):
-                                        baixo.append(round(preco[i + 1], 2))
+                                    if (phigh[i + 1] > phigh[i]) and (phigh[i + 1] > phigh[i + 2]):
+                                        alto.append(round(phigh[i + 1], 2))
+                                    elif (plow[i + 1] < plow[i]) and (plow[i + 1] < plow[i + 2]):
+                                        baixo.append(round(plow[i + 1], 2))
                                     else:
                                         pass
                                 p_altos = Counter(alto)
@@ -491,6 +548,7 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                                             perda_c.append(round((1 - self.porcentagem) * 100, 2))
                                             preco_c.append(favoravel)
                                             stop_c.append(Acao.iloc[-1, 3])
+                                            candle_f_c.append(candle_force)
                                             self.pbar.update(1)
                                             break
                                         # Se o primeiro topo superior encontrado não satisfazer a relação Risco x Retorno, sai do laço com break
@@ -501,17 +559,15 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                                         pass
 
 
-                            # Condição para Setup 9.1, 9.2, 9.3 Venda
+                            # Condição para Setup 9.2, 9.3, Cruzamento Venda, PC
 
-                            elif ((candle_force == 12) or (candle_force == 14) or (candle_force == 16)):
+                            elif ((candle_force == 12) or (candle_force == 14) or (candle_force == 16) or (candle_force == 18)):
                                 # Loop para coletar os topos e fundos
                                 for i in range(0, len(volume) - 2):
-                                    # Condição para coletar os topos (aqui chamados de baixo)
-                                    if (preco[i + 1] > preco[i]) and (preco[i + 1] > preco[i + 2]):
-                                        baixo.append(round(preco[i + 1], 2))
-                                    # Condição para coletar os fundos (aqui chamados de alto)
-                                    elif (preco[i + 1] < preco[i]) and (preco[i + 1] < preco[i + 2]):
-                                        alto.append(round(preco[i + 1], 2))
+                                    if (phigh[i + 1] > phigh[i]) and (phigh[i + 1] > phigh[i + 2]):
+                                        alto.append(round(phigh[i + 1], 2))
+                                    elif (plow[i + 1] < plow[i]) and (plow[i + 1] < plow[i + 2]):
+                                        baixo.append(round(plow[i + 1], 2))
                                     else:
                                         pass
                                 p_baixos = Counter(baixo)
@@ -537,6 +593,7 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
                                             perda_v.append(round((1 - self.porcentagem) * 100, 2))
                                             preco_v.append(favoravel)
                                             stop_v.append(Acao.iloc[-1, 2])
+                                            candle_f_v.append(candle_force)
                                             self.pbar.update(1)
                                             break
                                         # Se o primeiro topo superior encontrado não satisfazer a relação Risco x Retorno, sai do laço com break
@@ -565,13 +622,13 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
             # print(f'#####\nCompra: {i}\nRisco x Retorno: {Risk_Return_c[c]}\nInveste: {investe_c[c]}\n#####')
             qnt_invest = 100 * ((round((investe_c[c] / preco_c[c]), 0)) // 100)
             valor_invest = qnt_invest * round(preco_c[c], 2)
-            self.comprar.append(['Comprar', i, round(Risk_Return_c[c], 2), valor_invest, perda_c[c], round(preco_c[c], 2), qnt_invest, round(stop_c[c], 2)])
+            self.comprar.append(['Comprar', i, round(Risk_Return_c[c], 2), valor_invest, perda_c[c], round(preco_c[c], 2), qnt_invest, round(stop_c[c], 2), candle_f_c[c]])
 
         for c, i in enumerate(vende):
             # print(f'#####\nVende: {i}\nRisco x Retorno: {Risk_Return_v[c]}\nInveste: {investe_v[c]}\n#####')
             qnt_invest = 100 * ((round((investe_v[c] / preco_v[c]), 0)) // 100)
             valor_invest = qnt_invest * round(preco_v[c], 2)
-            self.vender.append(['Vender', i, round(Risk_Return_v[c], 2), valor_invest, perda_v[c], round(preco_v[c], 2), qnt_invest, round(stop_v[c], 2)])
+            self.vender.append(['Vender', i, round(Risk_Return_v[c], 2), valor_invest, perda_v[c], round(preco_v[c], 2), qnt_invest, round(stop_v[c], 2), candle_f_v[c]])
 
         if len(self.comprar) != 0:
             for i in self.comprar:
@@ -587,7 +644,7 @@ class WebScraping(threading.Thread):#threading.Thread, QThread):
             os.remove(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_Resultado/Dados.csv')
         with open(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_Resultado/Dados.csv', 'w', newline='') as dados:
             writer = csv.writer(dados)
-            col_name = ['Operation', 'Papel', 'Risco x Retorno', 'Qtd a Investir', '% de Perda', 'Price', 'Qtd de papel', 'Stop loss']
+            col_name = ['Operation', 'Papel', 'Risco x Retorno', 'Qtd a Investir', '% de Perda', 'Price', 'Qtd de papel', 'Stop loss', 'Setup']
             #print(col_name)
             writer.writerow(col_name)
             for d in self.comprar:
@@ -608,14 +665,11 @@ if __name__ == '__main__':
     #cap_semanal = perda + capital_op*taxa_mensal/4
     #taxa_semanal = (cap_semanal/perda) - 1
     #print(taxa_semanal)
-    minus = 0
     short = 9
     long = 21
     stdoutmutex = threading.Lock()
     threads = []
-    descartados = ['VTLT11', 'TFOF11', 'VSHO11']#Investidor qualificado: Checar público alvo['MGFF11', 'BCFF11', 'FIGS11', 'MALL11']#['MAGG3', 'ESTC3', 'TOTS3', 'MRFG3', 'RLOG3', 'TRPN3']#['HFOF11', 'BBVJ11', 'MGFF11', 'LVBI11']
-    path_now = 'F:/OneDrive/Investimento/COTAHIST/COTAHIST_A2020.TXT'
-    obj = WebScraping(vol_acao, vol_fii, capital_op, perda, minus, short, long, descartados, path_now, stdoutmutex)
+    obj = WebScraping(vol_acao, vol_fii, capital_op, perda, short, long, stdoutmutex)
     obj.start()
     threads.append(obj)
     for thread in threads:

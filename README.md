@@ -1,7 +1,7 @@
-# Analysis with William's Percent Range (WPR)
+# Analysis with William's Percent Range (WPR) and Setup's
 
 Description. 
-The package William's Percent Range is used to:
+The package William's Percent Range is used to check the moment to make an operation.
 - Processing:
     - Download data
     - Updata data

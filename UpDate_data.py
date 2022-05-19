@@ -191,7 +191,7 @@ if __name__ == '__main__':
     descartados = ''
     stdoutmutex = threading.Lock()
     threads = []
-    tipo = "yahoo"#"MT5"
+    tipo = "MT5"
     obj = Atualizar(tipo, descartados, stdoutmutex)
     threadCOMP = threading.Thread(target=obj.comparar_dados())
     threadCOMP.daemon = True
