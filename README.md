@@ -1,11 +1,12 @@
 # Analysis with William's Percent Range (WPR) and Setup's
 
 Description. 
-The package William's Percent Range is used to check the moment to make an operation.
+The package William's Percent Range and Setups are used to check the moment to make an operation.
 - Processing:
     - Download data
     - Updata data
     - Processing Model
+    - Farofa do Mercado
 
 ## Installation
 
