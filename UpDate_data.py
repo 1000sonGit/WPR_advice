@@ -12,10 +12,11 @@ import MetaTrader5 as mt5
 
 class Atualizar(threading.Thread):
 
-    def __init__(self, tipo, descartados, mutex):
+    def __init__(self, tipo, descartados, mutex, intervalo):
         self.tipo = tipo
         self.descartados = descartados
         self.mutex = mutex
+        self.intervalo = intervalo
         threading.Thread.__init__(self)
 
     def comparar_dados(self):
@@ -28,7 +29,7 @@ class Atualizar(threading.Thread):
         ##lista = os.listdir(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV')
         ##self.listaAcao = [x.replace('.csv', '') for x in lista]
         # Utilizando somente a lista das opções com liquidez
-        #self.listaAcao = ['CMIG4.SA']
+        #self.listaAcao = ['PETR4.SA']
         self.listaAcao = ['BOVA11.SA', 'ABEV3.SA', 'BBDC4.SA', 'CIEL3.SA', 'CSNA3.SA', 'GGBR4.SA',
                           'ITUB4.SA', 'ITSA4.SA', 'PETR4.SA', 'USIM5.SA', 'VALE3.SA',
                           'BRFS3.SA', 'SBSP3.SA', 'EMBR3.SA', 'SUZB3.SA', 'MRFG3.SA', 'JBSS3.SA', 'WEGE3.SA',
@@ -39,13 +40,17 @@ class Atualizar(threading.Thread):
             for papel in self.listaAcao:
                 print(papel)
                 # Verificando se o arquivo existe
-                if os.path.exists(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{papel}.csv'):
-                    self.dadosY_CSV = pd.read_csv(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{papel}.csv', sep=',', engine='python')
+                if os.path.exists(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{self.intervalo}/{papel}.csv'):
+                    dadosY = pd.read_csv(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{self.intervalo}/{papel}.csv', sep=',', engine='python')
                     # dadosAcao = pd.read_csv(f'F:/OneDrive/Cursos Python/AntiFragil/Blue Chips/{self.papel}.csv', sep=',', engine='python')  # ECOR3.SA
                     # Removendo os dados nulos (NaN)
                     #sleep(0.05)
                     try:
-                        self.dadosY_CSV.dropna(inplace=True)
+                        dadosY.dropna(inplace=True)
+                        # Removendo os dados nulos
+                        dadosY.dropna(inplace=True)
+                        # Removendo por filtro valores igual a zero
+                        self.dadosY_CSV = dadosY[dadosY.iloc[0:, 1] > 0]
                     except ValueError:
                         pass
                     pass
@@ -64,17 +69,20 @@ class Atualizar(threading.Thread):
                         # conecte-se ao MetaTrader 5
                         if(self.tipo=="MT5"):
                             if not mt5.initialize():
-                                print("initialize() failed")
-                                mt5.shutdown()
+                                print("initialize() failed, error code =", mt5.last_error())
+                                quit()
 
                             # consultamos o estado e os parâmetros de conexão
-                            print(mt5.terminal_info())
+                            #print(mt5.terminal_info())
                             # obtemos informações sobre a versão do MetaTrader 5
                             print(mt5.version())
                             #yf.pdr_override()
                             #dados = wb.DataReader(f'{papel}', data_source='yahoo', start=f'{data_i}', end=f'{hoje}')
-                            # solicitamos n barras do papel D1 do dia atual
-                            dados = mt5.copy_rates_from_pos(f"{papel.replace('.SA','')}", mt5.TIMEFRAME_D1, 0, 30)
+                            # solicitamos n barras do papel
+                            if(self.intervalo == '1d'):
+                                dados = mt5.copy_rates_from_pos(f"{papel.replace('.SA','')}", mt5.TIMEFRAME_D1, 0, 100)
+                            elif(self.intervalo == '1wk'):
+                                dados = mt5.copy_rates_from_pos(f"{papel.replace('.SA','')}", mt5.TIMEFRAME_W1, 0, 30)
                             # concluímos a conexão ao terminal MetaTrader 5
                             mt5.shutdown()
                             # exibimos cada elemento de dados recebidos numa nova linha
@@ -91,7 +99,7 @@ class Atualizar(threading.Thread):
                         else:
                             # Usando o Yahoo
                             yf.pdr_override()
-                            rates_frame = yf.download(tickers=f'{papel}', period='1mo', group_by='ticker')
+                            rates_frame = yf.download(tickers=f'{papel}', period='1mo', group_by='ticker', interval=self.intervalo)
                             sleep(0.05)
                     except (SystemError, TypeError):
                         pass
@@ -123,7 +131,7 @@ class Atualizar(threading.Thread):
                                 pass
                         print(self.count)
 
-                        with open(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{papel}.csv', 'a', newline='') as arquivo:
+                        with open(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{self.intervalo}/{papel}.csv', 'a', newline='') as arquivo:
                             writer = csv.writer(arquivo)
                             for x in range(0, self.count):
                                 # 'Date', 'Open', 'High', 'Low', 'Close', 'Variation', 'Volume'
@@ -140,12 +148,12 @@ class Atualizar(threading.Thread):
                     # Condição para atualizar o dado do mesmo dia
                     elif(rates_frame.iloc[-1, 0] != 0):
                         #Copiando os dados do arquivo e deletando
-                        with open(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{papel}.csv', 'r', newline='') as arquivo:
+                        with open(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{self.intervalo}/{papel}.csv', 'r', newline='') as arquivo:
                             read = list(csv.reader(arquivo))
                             # Deletando a última linha da lista
                             read.pop()
-                        if os.path.exists(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{papel}.csv'):
-                            os.remove(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{papel}.csv')
+                        if os.path.exists(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{self.intervalo}/{papel}.csv'):
+                            os.remove(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{self.intervalo}/{papel}.csv')
                         '''
                         # Caso ocorra problema de valor inválido na última atualização e não fizer o download antes do horário do pregão do dia seguinte
                         with open(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{papel}.csv', 'w',
@@ -157,7 +165,7 @@ class Atualizar(threading.Thread):
 
                         '''
                         # Reescrevendo e acrescentando a atualização
-                        with open(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{papel}.csv', 'w', newline='') as arquivo:
+                        with open(f'E:/OneDrive/Cursos Python/Farofa do Mercado/Dados_yahoo_CSV/{self.intervalo}/{papel}.csv', 'w', newline='') as arquivo:
                             writer = csv.writer(arquivo)
                             for x in read:
                                 # 'Date', 'Open', 'High', 'Low', 'Close', 'Variation', 'Volume'
@@ -182,17 +190,18 @@ class Atualizar(threading.Thread):
                                              rates_frame.iloc[-1, 3],
                                              ((rates_frame.iloc[-1, 2] / rates_frame.iloc[-1, 1]) - 1) * 100,
                                              rates_frame.iloc[-1, 5]))
-
                 else:
                     pass
-
 
 if __name__ == '__main__':
     descartados = ''
     stdoutmutex = threading.Lock()
+    # valid intervals: 1m,2m,5m,15m,30m,60m,90m,1h,1d,5d,1wk,1mo,3mo
+    # (optional, default is '1d')
+    interval = "1wk"
     threads = []
     tipo = "MT5"
-    obj = Atualizar(tipo, descartados, stdoutmutex)
+    obj = Atualizar(tipo, descartados, stdoutmutex, interval)
     threadCOMP = threading.Thread(target=obj.comparar_dados())
     threadCOMP.daemon = True
     threadCOMP.start()
